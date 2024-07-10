@@ -14,6 +14,8 @@ import CustomFormField, { FormFieldType } from "../CustomFormField";
 import SubmitButton from "../SubmitButton";
 import { UserFormValidation } from "@/lib/validation";
 import { createUser } from "@/actions/patient.actions";
+import { toast } from "sonner";
+import { Button } from "../ui/button";
 
 export const PatientForm = () => {
   const router = useRouter();
@@ -40,11 +42,13 @@ export const PatientForm = () => {
 
       const newUser = await createUser(user);
 
-      if (newUser) {
-        router.push(`/patients/${newUser.$id}/register`);
+      if (newUser?.success) {
+        router.push(`/patients/${newUser.data.$id}/register`);
+      } else {
+        toast.error(newUser?.message);
       }
     } catch (error) {
-      console.log(error);
+      toast.error("An error occurred while creating the user");
     }
 
     setIsLoading(false);
