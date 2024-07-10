@@ -18,7 +18,7 @@ import { parseStringify } from "../lib/utils";
 // CREATE APPWRITE USER
 export const createUser = async (user: CreateUserParams) => {
   try {
-    const newuser = await users.create(
+    const newUser = await users.create(
       ID.unique(),
       user.email,
       user.phone,
@@ -26,17 +26,36 @@ export const createUser = async (user: CreateUserParams) => {
       user.name
     );
 
-    return parseStringify(newuser);
+    return { success: true, data: parseStringify(newUser) };
   } catch (error: any) {
     // Check existing user
     if (error && error?.code === 409) {
-      const existingUser = await users.list([
-        Query.equal("email", [user.email]),
+      const data = await users.list([
+        Query.or([
+          Query.equal("email", [user.email]),
+          Query.equal("phone", [user.phone]),
+        ]),
       ]);
-
-      return existingUser.users[0];
+      const existingUser = data.users[0];
+      if (
+        existingUser.email === user.email &&
+        existingUser.phone === user.phone
+      ) {
+        return { success: true, data: parseStringify(existingUser) };
+      } else if (
+        existingUser.email !== user.email &&
+        existingUser.phone === user.phone
+      ) {
+        return { success: false, message: "Phone number already registered." };
+      } else if (
+        existingUser.email === user.email &&
+        existingUser.phone !== user.phone
+      ) {
+        return { success: false, message: "Email already registered." };
+      }
+    } else {
+      return { success: false, message: "error" };
     }
-    console.error("An error occurred while creating a new user:", error);
   }
 };
 
@@ -99,7 +118,6 @@ export const getPatient = async (userId: string) => {
       PATIENT_COLLECTION_ID!,
       [Query.equal("userId", [userId])]
     );
-
     return parseStringify(patients.documents[0]);
   } catch (error) {
     console.error(
